@@ -35,6 +35,16 @@
   --radio-pequeno: 9px;
   --sombra: 0 6px 24px rgba(0, 0, 0, .35);
 
+  /* Ancho de la columna de la aplicacion (cabecera y `main`) a partir del
+   * cual, en vez de seguir estirandose, se queda quieta y se centra. Nacio
+   * pensada para movil, y en un monitor de escritorio estirar cada fila de
+   * la lista o cada tarjeta de ajustes al ancho completo de la ventana no
+   * las hace mas legibles, las hace peores: una fila de lista con el texto a
+   * un lado y el icono a mil pixeles del otro es mas dificil de leer, no
+   * menos. Un solo numero para las dos, para que titulo y contenido no
+   * puedan quedar descuadrados entre si. */
+  --ancho-app: 40rem;
+
   /* Tipografia del sistema: no se descarga ninguna fuente. Una aplicacion que
    * promete que no habla con ningun servidor no puede pedirle la tipografia a
    * Google en cuanto arranca. */
@@ -82,25 +92,44 @@ p  { margin: 0 0 .6rem; color: var(--texto-suave); }
 
 /* ------------------------------------------------------------ estructura */
 
+/* La franja de fondo del header va de borde a borde de la ventana -- eso no
+ * cambia en un monitor ancho -- pero su contenido (`.cabeceraFila`) se
+ * ajusta al mismo ancho maximo que `main`, para que titulo y acciones queden
+ * alineados con la columna de la aplicacion y no pegados al borde
+ * izquierdo mientras todo lo demas aparece centrado. En un movil, donde
+ * el ancho de la ventana nunca llega al maximo, esto no cambia nada: la fila
+ * ocupa el 100% igual que antes. */
 header {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  padding: .85rem 1rem;
   background: var(--fondo-2);
   border-bottom: 1px solid var(--borde);
   position: sticky;
   top: 0;
   z-index: 10;
 }
+.cabeceraFila {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  max-width: var(--ancho-app);
+  margin: 0 auto;
+  padding: .85rem 1rem;
+}
 header .crece { flex: 1; min-width: 0; }
 header h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* Igual que el header: en un movil `main` ya ocupaba todo el ancho
+ * disponible, asi que este limite no le cambia nada. En un monitor de
+ * escritorio es lo que evita que una fila de la lista, o una tarjeta de
+ * ajustes, se estire de punta a punta de la pantalla -- una lista de
+ * contrasenas no se lee mejor por ser mas ancha, se lee peor. */
 main {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: var(--ancho-app);
+  margin: 0 auto;
 }
 main.centrado {
   display: flex;

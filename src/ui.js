@@ -14,6 +14,11 @@ import * as qr from './qr.js';
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const app = () => document.getElementById('app');
 
+// El mismo numero que llevan la app Android y el reloj -- ver "Version" en
+// el README del proyecto para la norma completa (se sube a la vez en las
+// tres, no cada una por su lado).
+const VERSION = '0.8.6';
+
 // ------------------------------------------------------------- estado
 
 const estado = {
@@ -248,7 +253,13 @@ function cabecera(titulo, opciones = {}) {
   const atras = opciones.atras
     ? `<button class="icono" data-ir="${opciones.atras}" title="Atras">${icono('atras')}</button>`
     : '';
-  return `<header>${atras}<div class="crece"><h1>${esc(titulo)}</h1></div>${opciones.acciones || ''}</header>`;
+  // La franja de fondo del `header` ocupa todo el ancho de la ventana, pero
+  // su contenido va en esta fila interior, con el mismo ancho maximo y
+  // centrado que `main` (ver `.cabeceraFila` en estilos.css) -- si no, en un
+  // monitor ancho el titulo y los botones quedarian pegados al borde
+  // izquierdo mientras la lista de debajo aparece centrada en medio de la
+  // pantalla, descuadrados entre si.
+  return `<header><div class="cabeceraFila">${atras}<div class="crece"><h1>${esc(titulo)}</h1></div>${opciones.acciones || ''}</div></header>`;
 }
 
 // ------------------------------------------------------------- bloqueo
@@ -1225,10 +1236,46 @@ function pideContrasenaYRestaura(fichero) {
       estado.claveMaestra = r.claveMaestra;
       estado.cabecera = r.cabecera;
       toca();
-      ve('lista');
-      avisa(`Boveda restaurada: ${estado.entradas.length} entradas`, 'exito');
+      pintaRestaurada(estado.entradas.length);
     });
   };
+}
+
+/**
+ * Lo que se ve justo despues de restaurar, antes de ir a la lista.
+ *
+ * Un aviso que desaparece solo (`avisa()`) no basta aqui: esto solo hace
+ * falta leerlo una vez, justo cuando restauras desde el reloj, y si se
+ * pierde entre las novedades de la lista nadie vuelve a buscarlo. Ademas
+ * el navegador no puede emparejar el reloj el mismo -eso es Bluetooth, y
+ * solo la aplicacion Android lo tiene- asi que aqui hace falta decir a
+ * donde ir, no solo que ha pasado.
+ */
+function pintaRestaurada(cuantas) {
+  app().innerHTML = `
+    ${cabecera('Boveda restaurada')}
+    <main>
+      <div class="tarjeta acento">
+        <h2>Boveda restaurada: ${cuantas} ${cuantas === 1 ? 'cuenta' : 'cuentas'}</h2>
+        <p class="suave">Ya estan aqui, en este navegador.</p>
+      </div>
+      <div class="tarjeta" style="margin-top:1rem">
+        <h2>Si usas el reloj</h2>
+        <p class="suave">Desde aqui no se puede emparejar: la conexion con el
+        reloj es por Bluetooth, y eso solo lo tiene la aplicacion Android, no
+        el navegador.</p>
+        <p class="suave">Para que vuelva a funcionar -ensenar los codigos de
+        doble factor, guardar una copia nueva-, abre la aplicacion Android en
+        un telefono, entra en "Reloj Garmin" y empareja: el reloj ensenara
+        seis digitos, acepta solo si coinciden con los del telefono, y
+        despues pedira un PIN nuevo. El PIN de antes ya no sirve: emparejar
+        genera una clave distinta, y es esa clave la que el PIN protege.</p>
+      </div>
+      <div class="botones" style="margin-top:1rem">
+        <button class="principal" id="continuar">Entendido</button>
+      </div>
+    </main>`;
+  $('#continuar').onclick = () => ve('lista');
 }
 
 // ------------------------------------------------------------- ajustes
@@ -1283,6 +1330,7 @@ function pintaAjustes() {
           <button class="peligro" id="borrarTodo">Borrar del navegador</button>
         </div>
       </div>
+      <div class="tenue" style="text-align:center;margin-top:1rem">Version ${VERSION}</div>
       <div id="aviso" style="min-height:1.4rem;margin-top:.8rem"></div>
     </main>`;
 
