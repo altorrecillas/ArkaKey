@@ -114,15 +114,13 @@
   --radio-pequeno: 9px;
   --sombra: 0 6px 24px rgba(0, 0, 0, .35);
 
-  /* Ancho de la columna de la aplicacion (cabecera y `main`) a partir del
-   * cual, en vez de seguir estirandose, se queda quieta y se centra. Nacio
-   * pensada para movil, y en un monitor de escritorio estirar cada fila de
-   * la lista o cada tarjeta de ajustes al ancho completo de la ventana no
-   * las hace mas legibles, las hace peores: una fila de lista con el texto a
-   * un lado y el icono a mil pixeles del otro es mas dificil de leer, no
-   * menos. Un solo numero para las dos, para que titulo y contenido no
-   * puedan quedar descuadrados entre si. */
-  --ancho-app: 40rem;
+  /* Ancho maximo de `#app` entera en un monitor de escritorio (ver el
+   * `@media` mas abajo). Nacio pensada para movil, y estirar cada fila de
+   * la lista o cada tarjeta de ajustes al ancho completo de una pantalla
+   * grande no las hace mas legibles, las hace peores: una fila con el texto
+   * a un lado y el icono a mil pixeles del otro es mas dificil de leer, no
+   * menos. */
+  --ancho-app: 46rem;
 
   /* Tipografia del sistema: no se descarga ninguna fuente. Una aplicacion que
    * promete que no habla con ningun servidor no puede pedirle la tipografia a
@@ -160,6 +158,35 @@ body {
 
 #app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
+/* En un monitor de escritorio, limitar solo el ancho del contenido (como se
+ * hizo primero) deja una columna del ancho de un movil flotando en medio de
+ * una pantalla vacia -- centrada, sin estirarse feo, pero **sigue pareciendo
+ * un movil** porque no hay nada que diga "esto es donde vive la aplicacion".
+ * Aqui `#app` entero pasa a ser una ventana con borde y sombra propios,
+ * sentada sobre un fondo de escritorio de otro tono -- el mismo lenguaje que
+ * usa cualquier aplicacion de mensajeria en su version web. Por debajo del
+ * punto de corte no cambia nada: sigue siendo la pantalla entera, de borde a
+ * borde, como en un movil. */
+@media (min-width: 48rem) {
+  body {
+    background: var(--fondo-2);
+    align-items: center;
+    justify-content: center;
+    padding-block: 2.5rem;
+  }
+  #app {
+    flex: none;
+    width: 100%;
+    max-width: var(--ancho-app);
+    height: min(50rem, calc(100vh - 5rem));
+    background: var(--fondo);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    overflow: hidden;
+  }
+}
+
 /* ------------------------------------------------------------ tipografia */
 
 h1 { font-size: 1.35rem; font-weight: 650; margin: 0; letter-spacing: -.01em; }
@@ -171,44 +198,25 @@ p  { margin: 0 0 .6rem; color: var(--texto-suave); }
 
 /* ------------------------------------------------------------ estructura */
 
-/* La franja de fondo del header va de borde a borde de la ventana -- eso no
- * cambia en un monitor ancho -- pero su contenido (`.cabeceraFila`) se
- * ajusta al mismo ancho maximo que `main`, para que titulo y acciones queden
- * alineados con la columna de la aplicacion y no pegados al borde
- * izquierdo mientras todo lo demas aparece centrado. En un movil, donde
- * el ancho de la ventana nunca llega al maximo, esto no cambia nada: la fila
- * ocupa el 100% igual que antes. */
 header {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .85rem 1rem;
   background: var(--fondo-2);
   border-bottom: 1px solid var(--borde);
   position: sticky;
   top: 0;
   z-index: 10;
 }
-.cabeceraFila {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  max-width: var(--ancho-app);
-  margin: 0 auto;
-  padding: .85rem 1rem;
-}
 header .crece { flex: 1; min-width: 0; }
 header h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Igual que el header: en un movil `main` ya ocupaba todo el ancho
- * disponible, asi que este limite no le cambia nada. En un monitor de
- * escritorio es lo que evita que una fila de la lista, o una tarjeta de
- * ajustes, se estire de punta a punta de la pantalla -- una lista de
- * contrasenas no se lee mejor por ser mas ancha, se lee peor. */
 main {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
   -webkit-overflow-scrolling: touch;
-  width: 100%;
-  max-width: var(--ancho-app);
-  margin: 0 auto;
 }
 main.centrado {
   display: flex;
@@ -12470,13 +12478,7 @@ function cabecera(titulo, opciones = {}) {
   const atras = opciones.atras
     ? `<button class="icono" data-ir="${opciones.atras}" title="Atras">${icono('atras')}</button>`
     : '';
-  // La franja de fondo del `header` ocupa todo el ancho de la ventana, pero
-  // su contenido va en esta fila interior, con el mismo ancho maximo y
-  // centrado que `main` (ver `.cabeceraFila` en estilos.css) -- si no, en un
-  // monitor ancho el titulo y los botones quedarian pegados al borde
-  // izquierdo mientras la lista de debajo aparece centrada en medio de la
-  // pantalla, descuadrados entre si.
-  return `<header><div class="cabeceraFila">${atras}<div class="crece"><h1>${esc(titulo)}</h1></div>${opciones.acciones || ''}</div></header>`;
+  return `<header>${atras}<div class="crece"><h1>${esc(titulo)}</h1></div>${opciones.acciones || ''}</header>`;
 }
 
 // ------------------------------------------------------------- bloqueo
