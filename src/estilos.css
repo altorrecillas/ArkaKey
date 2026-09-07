@@ -1,0 +1,517 @@
+/* Aspecto de Password Vault.
+ *
+ * Dos decisiones que mandan sobre el resto:
+ *
+ *  - **Oscuro por defecto, con acento azul frio.** No es moda: esta aplicacion
+ *    se abre a menudo en sitios donde alguien puede mirar la pantalla, y un
+ *    fondo oscuro con texto de contraste medido llama menos la atencion que un
+ *    fondo blanco a toda luz.
+ *  - **Nada de animaciones de adorno.** Lo unico que se mueve es lo que informa:
+ *    la cuenta atras de un codigo y el avance de una lectura. Una lista de
+ *    contrasenas que rebota al desplazarse no aporta nada y distrae.
+ */
+
+:root {
+  color-scheme: dark;
+
+  --fondo: #0a1020;
+  --fondo-2: #101a2e;
+  --superficie: #16233c;
+  --superficie-alta: #1d2d4a;
+  --borde: #24375a;
+  --texto: #e8eefc;
+  --texto-suave: #97a8c6;
+  --texto-tenue: #67789a;
+
+  --acento: #7ba7ff;
+  --acento-fuerte: #4d84f3;
+  --acento-suave: #1b2c4d;
+  --peligro: #ff7b7b;
+  --peligro-fondo: #3a1c22;
+  --bien: #6fe0a8;
+  --aviso: #ffc46b;
+
+  --radio: 14px;
+  --radio-pequeno: 9px;
+  --sombra: 0 6px 24px rgba(0, 0, 0, .35);
+
+  /* Tipografia del sistema: no se descarga ninguna fuente. Una aplicacion que
+   * promete que no habla con ningun servidor no puede pedirle la tipografia a
+   * Google en cuanto arranca. */
+  --letra: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+           Arial, sans-serif;
+  --letra-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas,
+                monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--letra);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  /* Respeta el hueco de la barra de estado y la barra de gestos cuando esta
+   * instalada como aplicacion. Sin esto, en un movil con muesca el titulo
+   * queda debajo del reloj del sistema. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+/* ------------------------------------------------------------ tipografia */
+
+h1 { font-size: 1.35rem; font-weight: 650; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 .3rem; }
+p  { margin: 0 0 .6rem; color: var(--texto-suave); }
+.tenue { color: var(--texto-tenue); font-size: .85rem; }
+.suave { color: var(--texto-suave); font-size: .9rem; }
+.mono  { font-family: var(--letra-mono); letter-spacing: .01em; }
+
+/* ------------------------------------------------------------ estructura */
+
+header {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .85rem 1rem;
+  background: var(--fondo-2);
+  border-bottom: 1px solid var(--borde);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+header .crece { flex: 1; min-width: 0; }
+header h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  -webkit-overflow-scrolling: touch;
+}
+main.centrado {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 26rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.pila { display: flex; flex-direction: column; gap: .8rem; }
+.fila { display: flex; align-items: center; gap: .6rem; }
+.fila.crece > :first-child { flex: 1; min-width: 0; }
+
+/* --------------------------------------------------------------- tarjetas */
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 1rem;
+}
+.tarjeta.aviso { background: var(--peligro-fondo); border-color: #5a2a33; }
+.tarjeta.acento { background: var(--acento-suave); border-color: #2b4c85; }
+
+/* ---------------------------------------------------------------- botones */
+
+button {
+  font: inherit;
+  font-weight: 550;
+  color: var(--texto);
+  background: var(--superficie-alta);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-pequeno);
+  padding: .6rem 1rem;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+  /* Cuarenta y cuatro pixeles de alto minimo: es el tamano por debajo del cual
+   * un dedo falla con frecuencia, y aqui fallar significa copiar la contrasena
+   * equivocada. */
+  min-height: 44px;
+}
+button:hover:not(:disabled) { background: #24365a; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .45; cursor: default; }
+
+button.principal {
+  background: var(--acento-fuerte);
+  border-color: var(--acento-fuerte);
+  color: #061024;
+  font-weight: 650;
+}
+button.principal:hover:not(:disabled) { background: #5d90f7; }
+
+button.plano {
+  background: transparent;
+  border-color: transparent;
+  color: var(--acento);
+  padding: .5rem .6rem;
+}
+button.plano:hover:not(:disabled) { background: var(--acento-suave); }
+
+button.peligro { color: var(--peligro); }
+button.icono {
+  min-height: 40px;
+  min-width: 40px;
+  padding: .4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border-color: transparent;
+  color: var(--texto-suave);
+}
+button.icono:hover { background: var(--superficie-alta); color: var(--texto); }
+button.icono svg { width: 20px; height: 20px; }
+
+.botones { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+/* ----------------------------------------------------------------- campos */
+
+label { display: block; font-size: .82rem; color: var(--texto-suave);
+        margin-bottom: .25rem; font-weight: 550; }
+
+input[type=text], input[type=password], input[type=number], textarea, select {
+  width: 100%;
+  font: inherit;
+  color: var(--texto);
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-pequeno);
+  padding: .65rem .75rem;
+  min-height: 44px;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--acento);
+  box-shadow: 0 0 0 3px rgba(123, 167, 255, .16);
+}
+textarea { min-height: 5rem; resize: vertical; }
+
+input[type=range] { width: 100%; accent-color: var(--acento); }
+
+.campo { margin-bottom: .85rem; }
+.error { color: var(--peligro); font-size: .88rem; }
+.exito { color: var(--bien); font-size: .88rem; }
+
+/* Campo de contrasena con el ojo para comprobar lo escrito, ver campoContrasena(). */
+.contrasena { position: relative; }
+.contrasena input { padding-right: 2.7rem; }
+.contrasena button.icono {
+  position: absolute;
+  right: .25rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ------------------------------------------------------------------ lista */
+
+.entrada {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  width: 100%;
+  text-align: left;
+  padding: .75rem .9rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  margin-bottom: .5rem;
+}
+.entrada:hover { background: var(--superficie-alta); }
+.entrada .info { flex: 1; min-width: 0; }
+.entrada .titulo {
+  font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.entrada .sub {
+  font-size: .85rem; color: var(--texto-tenue);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Inicial del sitio en un circulo de color. Da un punto de anclaje visual a
+ * una lista que si no seria toda igual, y el color sale del propio nombre para
+ * que cada entrada tenga siempre el mismo. */
+.avatar {
+  width: 38px; height: 38px;
+  flex: none;
+  border-radius: 11px;
+  display: grid; place-items: center;
+  font-weight: 650; font-size: 1rem;
+  color: #08101f;
+}
+
+.vacio {
+  text-align: center;
+  color: var(--texto-tenue);
+  padding: 3rem 1rem;
+}
+.vacio svg { width: 46px; height: 46px; opacity: .35; margin-bottom: .8rem; }
+
+/* ------------------------------------------------------------- secretos */
+
+.secreto {
+  font-family: var(--letra-mono);
+  font-size: 1.05rem;
+  word-break: break-all;
+  background: var(--fondo-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-pequeno);
+  padding: .65rem .75rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* El codigo de verificacion, que es lo que mas se mira y se teclea deprisa. */
+.totp {
+  font-family: var(--letra-mono);
+  font-size: 2.1rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  color: var(--acento);
+}
+.barra {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--borde);
+  overflow: hidden;
+}
+.barra > i {
+  display: block; height: 100%;
+  background: var(--acento);
+  transition: width .95s linear;
+}
+.barra.poco > i { background: var(--peligro); }
+/* Tramo intermedio: avisa a los diez segundos, cuando todavia da tiempo a
+   empezar a teclear. Mismos umbrales que el reloj y que Android, para que el
+   color signifique lo mismo en los tres sitios. */
+.barra.medio > i { background: #e08600; }
+.restan.medio { color: #e08600; }
+.restan.poco { color: var(--peligro); }
+
+/* ------------------------------------------------------------------- QR */
+
+.qr-caja {
+  display: grid;
+  place-items: center;
+  gap: .8rem;
+}
+/* Fondo blanco puro y sin nada encima: un QR se lee por el contraste, y
+ * cualquier tinte o sombra sobre los modulos claros le quita margen al lector. */
+#qr-lienzo {
+  background: #fff;
+  border-radius: 12px;
+  width: min(78vw, 340px);
+  height: min(78vw, 340px);
+  image-rendering: pixelated;
+}
+.qr-pie { display: flex; gap: 1rem; align-items: center; }
+.puntos { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+.puntos i {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--borde);
+}
+.puntos i.hecho { background: var(--bien); }
+.puntos i.actual { background: var(--acento); transform: scale(1.35); }
+
+#camara {
+  width: 100%;
+  max-height: 46vh;
+  border-radius: var(--radio);
+  background: #000;
+  object-fit: cover;
+}
+
+/* --------------------------------------------------------------- barritas */
+
+.chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .78rem; font-weight: 600;
+  padding: .2rem .55rem;
+  border-radius: 999px;
+  background: var(--acento-suave);
+  color: var(--acento);
+}
+.chip.peligro { background: var(--peligro-fondo); color: var(--peligro); }
+.chip.bien { background: #123528; color: var(--bien); }
+
+.medidor { display: flex; gap: 3px; margin-top: .4rem; }
+.medidor i {
+  flex: 1; height: 4px; border-radius: 2px; background: var(--borde);
+}
+.medidor i.on { background: var(--bien); }
+.medidor.flojo i.on { background: var(--aviso); }
+.medidor.malo i.on { background: var(--peligro); }
+
+/* ------------------------------------------------------------------ menu */
+
+.menu {
+  position: fixed; inset: 0;
+  background: rgba(4, 8, 18, .6);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 50;
+}
+.menu > div {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 18px 18px 0 0;
+  width: 100%; max-width: 30rem;
+  padding: 1rem;
+  box-shadow: var(--sombra);
+}
+@media (min-width: 40rem) {
+  .menu { align-items: center; }
+  .menu > div { border-radius: 18px; }
+}
+
+.cargando {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid var(--borde);
+  border-top-color: var(--acento);
+  border-radius: 50%;
+  animation: gira .8s linear infinite;
+}
+@keyframes gira { to { transform: rotate(360deg); } }
+
+
+/* La capa de escanear un codigo de dos pasos. Va por encima de todo porque se
+   abre desde el formulario de la credencial sin cambiar de pantalla: asi lo
+   que ya estaba escrito en el formulario sigue ahi al volver. */
+.capaCamara {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+.capaCamara video {
+  flex: 1;
+  width: 100%;
+  object-fit: cover;
+  min-height: 0;
+}
+.capaCamaraPie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--fondo, #111);
+  color: var(--texto, #eee);
+}
+
+/* ---------------------------------------------- bienvenida y explicacion */
+
+/* La primera pantalla. Respira mas que el resto de la aplicacion a proposito:
+   es la unica que se lee entera, y apretarla la convierte en un muro de texto
+   que nadie lee. */
+.bienvenida { max-width: 30rem; }
+
+.marca { text-align: center; margin-bottom: 2rem; }
+.marca h1 { margin: .6rem 0 .2rem; font-size: 1.6rem; letter-spacing: -.02em; }
+.marcaIcono {
+  display: inline-flex;
+  padding: .9rem;
+  border-radius: 50%;
+  background: var(--acento-suave);
+  color: var(--acento);
+}
+.marcaIcono svg { width: 30px; height: 30px; }
+
+.puntos { list-style: none; margin: 0 0 1.8rem; padding: 0; }
+.puntos li { display: flex; gap: .9rem; margin-bottom: 1.3rem; }
+.puntos strong { display: block; margin-bottom: .15rem; }
+.puntos p { margin: 0; font-size: .9rem; }
+
+/* El icono no se encoge cuando el texto de al lado es largo. Sin
+   `flex-shrink:0` se aplastaba a una rendija en pantallas estrechas. */
+.puntoIcono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radio-pequeno);
+  background: var(--superficie);
+  color: var(--acento);
+}
+.puntoIcono svg { width: 20px; height: 20px; }
+
+/* Texto largo para leer, no para ojear: medida de linea corta y mas aire entre
+   parrafos. Una linea de 90 caracteres se lee mal en un movil. */
+.documento { max-width: 34rem; line-height: 1.65; }
+.documento h2 {
+  font-size: 1.05rem;
+  margin: 1.8rem 0 .5rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--borde);
+}
+.documento h2:first-child { margin-top: .4rem; border-top: 0; padding-top: 0; }
+.documento p { margin: .5rem 0; color: var(--texto-suave); }
+.documento ul { margin: .5rem 0; padding-left: 1.2rem; color: var(--texto-suave); }
+.documento li { margin: .35rem 0; }
+.documento strong, .documento em { color: var(--texto); }
+
+.piezas { margin: .6rem 0; }
+.piezas dt { font-weight: 600; margin-top: .8rem; }
+.piezas dd {
+  margin: .2rem 0 0;
+  padding-left: .9rem;
+  border-left: 2px solid var(--borde);
+  color: var(--texto-suave);
+}
+
+/* ------------------------------------------------------- detalles finos */
+
+/* Foco visible con teclado, y solo con teclado.
+   Sin esto no habia forma de saber donde estabas tabulando, que deja la
+   aplicacion inutilizable sin raton. `:focus-visible` y no `:focus` para que no
+   salga el anillo al hacer clic con el raton. */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+/* El estado vacio, con sitio para los botones que ahora lleva. */
+.vacio .botones { flex-wrap: wrap; }
+.vacio p { max-width: 24rem; margin-left: auto; margin-right: auto; }
+
+/* Quien haya pedido menos movimiento en su sistema, que no lo tenga. Aqui hay
+   poco, pero lo poco que hay se apaga. */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  button:active:not(:disabled) { transform: none; }
+}
+
+/* Un aviso que no se puede leer por encima. Se usa para lo unico irreversible
+   que hay en la aplicacion: perder la contrasena maestra. */
+.documento p.subrayado {
+  color: var(--texto);
+  background: var(--peligro-fondo);
+  border-left: 3px solid var(--peligro);
+  padding: .7rem .9rem;
+  border-radius: 0 var(--radio-pequeno) var(--radio-pequeno) 0;
+  margin: .9rem 0;
+}
