@@ -253,13 +253,7 @@ function cabecera(titulo, opciones = {}) {
   const atras = opciones.atras
     ? `<button class="icono" data-ir="${opciones.atras}" title="Atras">${icono('atras')}</button>`
     : '';
-  // La franja de fondo del `header` ocupa todo el ancho de la ventana, pero
-  // su contenido va en esta fila interior, con el mismo ancho maximo y
-  // centrado que `main` (ver `.cabeceraFila` en estilos.css) -- si no, en un
-  // monitor ancho el titulo y los botones quedarian pegados al borde
-  // izquierdo mientras la lista de debajo aparece centrada en medio de la
-  // pantalla, descuadrados entre si.
-  return `<header><div class="cabeceraFila">${atras}<div class="crece"><h1>${esc(titulo)}</h1></div>${opciones.acciones || ''}</div></header>`;
+  return `<header>${atras}<div class="crece"><h1>${esc(titulo)}</h1></div>${opciones.acciones || ''}</header>`;
 }
 
 // ------------------------------------------------------------- bloqueo
