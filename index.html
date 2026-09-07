@@ -114,6 +114,16 @@
   --radio-pequeno: 9px;
   --sombra: 0 6px 24px rgba(0, 0, 0, .35);
 
+  /* Ancho de la columna de la aplicacion (cabecera y `main`) a partir del
+   * cual, en vez de seguir estirandose, se queda quieta y se centra. Nacio
+   * pensada para movil, y en un monitor de escritorio estirar cada fila de
+   * la lista o cada tarjeta de ajustes al ancho completo de la ventana no
+   * las hace mas legibles, las hace peores: una fila de lista con el texto a
+   * un lado y el icono a mil pixeles del otro es mas dificil de leer, no
+   * menos. Un solo numero para las dos, para que titulo y contenido no
+   * puedan quedar descuadrados entre si. */
+  --ancho-app: 40rem;
+
   /* Tipografia del sistema: no se descarga ninguna fuente. Una aplicacion que
    * promete que no habla con ningun servidor no puede pedirle la tipografia a
    * Google en cuanto arranca. */
@@ -161,25 +171,44 @@ p  { margin: 0 0 .6rem; color: var(--texto-suave); }
 
 /* ------------------------------------------------------------ estructura */
 
+/* La franja de fondo del header va de borde a borde de la ventana -- eso no
+ * cambia en un monitor ancho -- pero su contenido (`.cabeceraFila`) se
+ * ajusta al mismo ancho maximo que `main`, para que titulo y acciones queden
+ * alineados con la columna de la aplicacion y no pegados al borde
+ * izquierdo mientras todo lo demas aparece centrado. En un movil, donde
+ * el ancho de la ventana nunca llega al maximo, esto no cambia nada: la fila
+ * ocupa el 100% igual que antes. */
 header {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  padding: .85rem 1rem;
   background: var(--fondo-2);
   border-bottom: 1px solid var(--borde);
   position: sticky;
   top: 0;
   z-index: 10;
 }
+.cabeceraFila {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  max-width: var(--ancho-app);
+  margin: 0 auto;
+  padding: .85rem 1rem;
+}
 header .crece { flex: 1; min-width: 0; }
 header h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+/* Igual que el header: en un movil `main` ya ocupaba todo el ancho
+ * disponible, asi que este limite no le cambia nada. En un monitor de
+ * escritorio es lo que evita que una fila de la lista, o una tarjeta de
+ * ajustes, se estire de punta a punta de la pantalla -- una lista de
+ * contrasenas no se lee mejor por ser mas ancha, se lee peor. */
 main {
   flex: 1;
   overflow-y: auto;
   padding: 1rem;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: var(--ancho-app);
+  margin: 0 auto;
 }
 main.centrado {
   display: flex;
@@ -10726,8 +10755,8 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 </script>
 
 <script>
-// Los modulos de la aplicacion, juntados por `tools/construir_pwa.py` desde
-// `pwa/src/*.js`. El codigo es el mismo, sin minificar: se puede leer.
+// Los modulos de la aplicacion, juntados por `construir.py` desde `src/*.js`.
+// El codigo es el mismo, sin minificar: se puede leer.
 const __mods = {};
 __mods['qr'] = (function () {
 // Codificador de QR en modo binario, versiones 1 a 20, niveles L y M.
@@ -12202,6 +12231,11 @@ const qr = __mods['qr'];
 const $ = (sel, raiz = document) => raiz.querySelector(sel);
 const app = () => document.getElementById('app');
 
+// El mismo numero que llevan la app Android y el reloj -- ver "Version" en
+// el README del proyecto para la norma completa (se sube a la vez en las
+// tres, no cada una por su lado).
+const VERSION = '0.8.6';
+
 // ------------------------------------------------------------- estado
 
 const estado = {
@@ -12436,7 +12470,13 @@ function cabecera(titulo, opciones = {}) {
   const atras = opciones.atras
     ? `<button class="icono" data-ir="${opciones.atras}" title="Atras">${icono('atras')}</button>`
     : '';
-  return `<header>${atras}<div class="crece"><h1>${esc(titulo)}</h1></div>${opciones.acciones || ''}</header>`;
+  // La franja de fondo del `header` ocupa todo el ancho de la ventana, pero
+  // su contenido va en esta fila interior, con el mismo ancho maximo y
+  // centrado que `main` (ver `.cabeceraFila` en estilos.css) -- si no, en un
+  // monitor ancho el titulo y los botones quedarian pegados al borde
+  // izquierdo mientras la lista de debajo aparece centrada en medio de la
+  // pantalla, descuadrados entre si.
+  return `<header><div class="cabeceraFila">${atras}<div class="crece"><h1>${esc(titulo)}</h1></div>${opciones.acciones || ''}</div></header>`;
 }
 
 // ------------------------------------------------------------- bloqueo
@@ -13413,10 +13453,46 @@ function pideContrasenaYRestaura(fichero) {
       estado.claveMaestra = r.claveMaestra;
       estado.cabecera = r.cabecera;
       toca();
-      ve('lista');
-      avisa(`Boveda restaurada: ${estado.entradas.length} entradas`, 'exito');
+      pintaRestaurada(estado.entradas.length);
     });
   };
+}
+
+/**
+ * Lo que se ve justo despues de restaurar, antes de ir a la lista.
+ *
+ * Un aviso que desaparece solo (`avisa()`) no basta aqui: esto solo hace
+ * falta leerlo una vez, justo cuando restauras desde el reloj, y si se
+ * pierde entre las novedades de la lista nadie vuelve a buscarlo. Ademas
+ * el navegador no puede emparejar el reloj el mismo -eso es Bluetooth, y
+ * solo la aplicacion Android lo tiene- asi que aqui hace falta decir a
+ * donde ir, no solo que ha pasado.
+ */
+function pintaRestaurada(cuantas) {
+  app().innerHTML = `
+    ${cabecera('Boveda restaurada')}
+    <main>
+      <div class="tarjeta acento">
+        <h2>Boveda restaurada: ${cuantas} ${cuantas === 1 ? 'cuenta' : 'cuentas'}</h2>
+        <p class="suave">Ya estan aqui, en este navegador.</p>
+      </div>
+      <div class="tarjeta" style="margin-top:1rem">
+        <h2>Si usas el reloj</h2>
+        <p class="suave">Desde aqui no se puede emparejar: la conexion con el
+        reloj es por Bluetooth, y eso solo lo tiene la aplicacion Android, no
+        el navegador.</p>
+        <p class="suave">Para que vuelva a funcionar -ensenar los codigos de
+        doble factor, guardar una copia nueva-, abre la aplicacion Android en
+        un telefono, entra en "Reloj Garmin" y empareja: el reloj ensenara
+        seis digitos, acepta solo si coinciden con los del telefono, y
+        despues pedira un PIN nuevo. El PIN de antes ya no sirve: emparejar
+        genera una clave distinta, y es esa clave la que el PIN protege.</p>
+      </div>
+      <div class="botones" style="margin-top:1rem">
+        <button class="principal" id="continuar">Entendido</button>
+      </div>
+    </main>`;
+  $('#continuar').onclick = () => ve('lista');
 }
 
 // ------------------------------------------------------------- ajustes
@@ -13471,6 +13547,7 @@ function pintaAjustes() {
           <button class="peligro" id="borrarTodo">Borrar del navegador</button>
         </div>
       </div>
+      <div class="tenue" style="text-align:center;margin-top:1rem">Version ${VERSION}</div>
       <div id="aviso" style="min-height:1.4rem;margin-top:.8rem"></div>
     </main>`;
 
